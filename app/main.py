@@ -1,6 +1,5 @@
-import io, uuid, shutil
+import  uuid, shutil
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -13,12 +12,11 @@ from .analyzer import FaceInterestAnalyzer
 from .settings import YOLO_MODEL_PATH, RESNET_MODEL_PATH, TMP_DIR, OUTPUT_VIDEO_DIR
 
 app = FastAPI(
-    title="Face-Interest-Analyzer API",
-    description="Detect faces with YOLOv8 & classify interest levels with ResNet50",
+    title="Deteksi Wajah dan Pengenalan Ekspresi Siswa SD untuk Mengukur Ketertarikan Terhadap Mata Pelajaran",
+    description="Model YOLOV8 dan ResNet50",
     version="1.0.0"
 )
 
-# --- CORS Middleware ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,11 +25,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Mount folders for output static files ---
 app.mount("/output", StaticFiles(directory=str(TMP_DIR)), name="output")
 app.mount("/output_video", StaticFiles(directory=str(OUTPUT_VIDEO_DIR)), name="output_video")
 
-# --- Load models at startup ---
 analyzer: FaceInterestAnalyzer | None = None
 
 @app.on_event("startup")
@@ -46,7 +42,6 @@ def load_models():
 def health():
     return {"status": "ok"}
 
-# --- Analyze Image ---
 @app.post("/analyze/image", tags=["analyze"])
 async def analyze_image(
     file: UploadFile = File(...),
@@ -79,7 +74,6 @@ async def analyze_image(
 
     return JSONResponse(result)
 
-# --- Analyze Video ---
 @app.post("/analyze/video", tags=["analyze"])
 async def analyze_video(
     background_tasks: BackgroundTasks,
@@ -90,7 +84,6 @@ async def analyze_video(
     if file.content_type not in ["video/mp4", "video/avi"]:
         raise HTTPException(415, detail="Unsupported video format")
 
-    # Simpan file video sementara
     tmp_video: Path = TMP_DIR / f"{uuid.uuid4()}_{file.filename}"
     with tmp_video.open("wb") as f:
         shutil.copyfileobj(file.file, f)
